@@ -1,0 +1,46 @@
+// AI News Aggregator (No-Clickbait) — Prisma schema
+// SQLite is used as the local-first store. NewsItem rows are deduped by
+// `link` (unique), clustered by a shared `clusterId` (assigned by the
+// dedupe step after aggregation), and indexed on sourceFeed/topic/clusterId
+// for fast filtering in the UI.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model NewsItem {
+  id                String   @id @default(cuid())
+  sourceFeed        String
+  sourceName        String
+  title             String
+  rewrittenHeadline String?
+  link              String   @unique
+  pubDate           DateTime
+  description       String?
+  clickbaitScore    Int      @default(0)
+  clickbaitBand     String   @default("low")
+  topic             String?
+  biasTag           String?
+  clusterId         String?
+  createdAt         DateTime @default(now())
+
+  @@index([sourceFeed])
+  @@index([topic])
+  @@index([clusterId])
+}
+
+model Feed {
+  id            String    @id @default(cuid())
+  url           String    @unique
+  name          String
+  category      String
+  reliability    Int      @default(50)
+  bias          String?
+  lastFetchedAt DateTime?
+  createdAt     DateTime  @default(now())
+}
